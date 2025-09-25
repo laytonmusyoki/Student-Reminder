@@ -56,7 +56,7 @@ const DashboardScreen = ({ navigation }: any) => {
         {/* Navbar */}
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => drawer?.openDrawer()}>
-            <MaterialCommunityIcons name="menu" size={28} color="#fff" />
+            <MaterialCommunityIcons name="menu" size={28} marginTop={10} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.navTitle}>Dashboard</Text>
         </View>
@@ -81,15 +81,16 @@ const styles = StyleSheet.create({
   navbar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007AFF",
+    backgroundColor: "#4A90E2",
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingVertical: 40,
   },
   navTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
     marginLeft: 10,
+    marginTop: 10,
   },
   content: {
     flex: 1,
