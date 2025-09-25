@@ -33,27 +33,25 @@ def register(request):
 
 @api_view(['POST'])
 def signin(request):
-    if request.method == 'POST':
-        username = request.data.get('username')
-        password = request.data.get('password')
-        print(username,password)
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request,user)
-            refresh = RefreshToken.for_user(user)
-            data=Register(request.user).data
-            university=user.profile.university
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                "user":{
-                    "username":data['username'],
-                    "email":data['email'],
-                    "university":university
-                }
-            })
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    username = request.data.get('username')
+    password = request.data.get('password')
+    print(username, password)
+
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        login(request, user)
+        refresh = RefreshToken.for_user(user)
+
+        # ✅ Use serializer that includes profile.university
+        serializer = LoginResponseSerializer(user)
+
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)    
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
