@@ -26,7 +26,7 @@ const LoginScreen = () => {
 
     setLoading(true);
 
-    const baseUrl = "http://192.168.0.105:8000"; // ✅ replace with your IP
+    const baseUrl = "http://192.168.0.108:8000"; // ✅ replace with your IP
 
     try {
       const response = await fetch(`${baseUrl}/api/signin/`, {
