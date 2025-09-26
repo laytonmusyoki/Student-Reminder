@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -18,43 +20,47 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert("Error", "Please fill in both fields");
-      return;
-    }
+ const handleLogin = async () => {
+  if (!username || !password) {
+    Alert.alert("Error", "Please fill in both fields");
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
+  const baseUrl = "http://192.168.0.105:8000";
 
-    const baseUrl = "http://192.168.0.125:8000"; // ✅ replace with your IP
+  try {
+    const response = await fetch(`${baseUrl}/api/signin/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
 
-    try {
-      const response = await fetch(`${baseUrl}/api/signin/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+    const data = await response.json();
+    console.log("Login response:", data);
 
-      const data = await response.json();
-      console.log("Login response:", data);
-
-      if (response.ok) {
-        Alert.alert("Success", "Login successful!");
-        // ✅ You can store token here if needed
-        // AsyncStorage.setItem("token", data.access);
-
-        router.push("/dashboard"); // ✅ redirect after login
-      } else {
-        Alert.alert("Error", data.error || "Invalid credentials");
+    if (response.ok) {
+      if (data.access) {
+        await AsyncStorage.setItem("token", data.access);
       }
-    } catch (error: any) {
-      Alert.alert("Error", "Cannot connect to server. Check if Django is running.");
-    } finally {
-      setLoading(false);
+      await AsyncStorage.setItem("user", JSON.stringify(data));
+
+      const token = await AsyncStorage.getItem("token");
+      console.log("Saved token:", token);
+
+      Alert.alert("Success", "Login successful!");
+      router.push("/dashboard");
+    } else {
+      Alert.alert("Error", data.error || "Invalid credentials");
     }
-  };
+    const token = await AsyncStorage.getItem("token");
+    console.log("Token after login attempt:", token);
+  } catch (error: any) {
+    Alert.alert("Error", "Cannot connect to server. Check if your backend is running.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>
