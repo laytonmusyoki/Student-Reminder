@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,15 +9,31 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons"; // expo install @expo/vector-icons
 import { DrawerLayoutAndroid } from "react-native";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DashboardScreen = ({ navigation }: any) => {
   const [drawer, setDrawer] = useState<DrawerLayoutAndroid | null>(null);
+  const [username, setUsername] = useState("Guest");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem("user");
+        if (!raw) return setUsername("Guest");
+        const user = JSON.parse(raw);
+        setUsername(user?.user?.username ?? "Guest");
+      } catch (e) {
+        console.warn("Load user failed", e);
+      }
+    })();
+  }, []);
 
   const renderSidebar = () => (
     <View style={styles.sidebar}>
       <View style={styles.sidebarHeader}>
         <Text style={styles.sidebarHeaderText}>Menu</Text>
       </View>
+       
       
       <TouchableOpacity
         style={styles.sidebarLink}
@@ -69,7 +85,7 @@ const DashboardScreen = ({ navigation }: any) => {
 
         {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome to your Dashboard 🎉</Text>
+          <Text style={styles.welcomeText}>Welcome to your Dashboard  {username} 🎉</Text>
           <Text style={styles.text}>Here is some dummy content...</Text>
         </View>
 
@@ -94,7 +110,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#2196F3",
     paddingHorizontal: 25,
-    paddingVertical: 30,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -104,13 +119,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   menuButton: {
-    padding: 8,
-
+   paddingVertical: 25,
     marginRight: 15,
+    marginTop: 25,
   },
   navTitle: {
     fontSize: 22,
-    paddingVertical: 15,
+    paddingVertical: 25,
+    marginTop: 25,
     fontWeight: "bold",
     color: "#fff",
   },
