@@ -12,3 +12,14 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.university
+    
+
+# reminder
+class Reminder(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reminder_type = models.CharField(max_length=255)
+    due_date = models.CharField(max_length=255)
+    due_time = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.reminder_type
