@@ -53,6 +53,48 @@ def signin(request):
 
     return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)    
 
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def addReminder(request):
+    if request.method == 'POST':
+        serializer=ReminderSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({"success":"Reminder added successfully"},status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getReminders(request):
+    reminders = Reminder.objects.filter(user=request.user)
+    serializer = ReminderSerializer(reminders, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def deleteReminder(request, reminder_id):
+    try:
+        reminder = Reminder.objects.get(id=reminder_id, user=request.user)
+    except Reminder.DoesNotExist:
+        return Response({"error": "Reminder not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    reminder.delete()
+    return Response({"success": "Reminder deleted successfully"}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def users(request):
+    users = User.objects.all()
+    user_data = [{"id": user.id, "username": user.username, "email": user.email} for user in users]
+    return Response(user_data, status=status.HTTP_200_OK)
+
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def signout(request):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile
+from .models import Profile, Reminder
 from django.contrib.auth.models import User
 
 class Register(serializers.Serializer):
@@ -32,3 +32,14 @@ class LoginResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "university"]
+
+
+
+class ReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Reminder
+        fields='__all__'
+        read_only_fields = ['user']
+
+
+        
