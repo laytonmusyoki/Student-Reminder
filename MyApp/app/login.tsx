@@ -20,20 +20,23 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
- const handleLogin = async () => {
-  if (!username || !password) {
+const handleLogin = async () => {
+  const trimmedUsername = username.trim(); 
+  const trimmedPassword = password.trim();
+
+  if (!trimmedUsername || !trimmedPassword) {
     Alert.alert("Error", "Please fill in both fields");
     return;
   }
 
   setLoading(true);
-  const baseUrl = "http://192.168.0.105:8000";
+  const baseUrl = "http://192.168.0.108:8000";
 
   try {
     const response = await fetch(`${baseUrl}/api/signin/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword }),
     });
 
     const data = await response.json();
@@ -53,8 +56,6 @@ const LoginScreen = () => {
     } else {
       Alert.alert("Error", data.error || "Invalid credentials");
     }
-    const token = await AsyncStorage.getItem("token");
-    console.log("Token after login attempt:", token);
   } catch (error: any) {
     Alert.alert("Error", "Cannot connect to server. Check if your backend is running.");
   } finally {
@@ -62,9 +63,10 @@ const LoginScreen = () => {
   }
 };
 
+
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Welcome Back</Text>
+      <Text style={styles.heading}>Welcome Back !!</Text>
 
         <TextInput
           style={styles.input}
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 30,
+    textTransform: "uppercase",
     color:"#4A90E2"
   },
   input: {

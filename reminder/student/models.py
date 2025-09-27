@@ -18,6 +18,7 @@ class Profile(models.Model):
 class Reminder(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reminder_type = models.CharField(max_length=255)
+    presentation_type = models.CharField(max_length=255, blank=True, null=True)
     due_date = models.CharField(max_length=255)
     due_time = models.CharField(max_length=255)
 

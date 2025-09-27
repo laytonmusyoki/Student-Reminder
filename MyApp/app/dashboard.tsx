@@ -1,20 +1,32 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  FlatList,
+  Alert,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons"; // expo install @expo/vector-icons
-import { DrawerLayoutAndroid } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const DashboardScreen = ({ navigation }: any) => {
-  const [drawer, setDrawer] = useState<DrawerLayoutAndroid | null>(null);
+const DashboardScreen = () => {
   const [username, setUsername] = useState("Guest");
+  const [reminders, setReminders] = useState<any[]>([]);
+  const [token, setToken] = useState<string | null>(null);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const baseUrl = "http://192.168.0.108:8000";
+
+  // Load user
   useEffect(() => {
     (async () => {
       try {
@@ -28,100 +40,190 @@ const DashboardScreen = ({ navigation }: any) => {
     })();
   }, []);
 
-  const renderSidebar = () => (
-    <View style={styles.sidebar}>
-      <View style={styles.sidebarHeader}>
-        <Text style={styles.sidebarHeaderText}>Menu</Text>
+  // Load token
+  useEffect(() => {
+    (async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("token");
+        setToken(storedToken);
+      } catch (e) {
+        console.warn("Failed to load token", e);
+      }
+    })();
+  }, []);
+
+  // Fetch reminders
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!token) return;
+        const response = await fetch(`${baseUrl}/api/getReminders/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        setReminders(data);
+      } catch (e) {
+        console.warn("Fetch reminders failed", e);
+      }
+    })();
+  }, [token]);
+
+  // Delete reminder
+  const handleDelete = async (id: number) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${baseUrl}/api/deleteReminder/${id}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setReminders((prev) => prev.filter((reminder) => reminder.id !== id));
+        Alert.alert("Success", "Reminder deleted successfully");
+      } else {
+        const err = await response.json();
+        console.warn("Delete failed:", err);
+      }
+    } catch (e) {
+      console.warn("Delete request failed", e);
+    }
+  };
+
+  // Reminder card
+  const renderReminder = ({ item }: any) => (
+    <View style={styles.reminderCard}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.reminderType}>{item.reminder_type}</Text>
+        <Text style={styles.reminderDate}>Due Date: {item.due_date}</Text>
+        <Text style={styles.reminderTime}>Time: {item.due_time}</Text>
+        {item.presentation_type ? (
+          <Text style={styles.reminderPresentation}>
+            Presentation: {item.presentation_type}
+          </Text>
+        ) : null}
       </View>
-       
-      
-      <TouchableOpacity
-        style={styles.sidebarLink}
-        onPress={() => router.push("/reminders")}
-      >
-        <MaterialCommunityIcons name="bell-outline" size={22} color="#2196F3" style={styles.sidebarIcon} />
-        <Text style={styles.sidebarText}>Reminder</Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.sidebarLink}
-        onPress={() => {
-          navigation.navigate("View");
-          drawer?.closeDrawer();
-        }}
-      >
-        <MaterialCommunityIcons name="eye-outline" size={22} color="#2196F3" style={styles.sidebarIcon} />
-        <Text style={styles.sidebarText}>View</Text>
-      </TouchableOpacity>
+      <View style={styles.actions}>
+        {/* Edit */}
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: "/edit",
+              params: {
+                id: item.id,
+                reminder_type: item.reminder_type,
+                presentation_type: item.presentation_type,
+                due_date: item.due_date,
+                due_time: item.due_time,
+              },
+            })
+          }
+        >
+          <MaterialCommunityIcons
+            name="pencil-outline"
+            size={22}
+            color="#4CAF50"
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.sidebarLink}
-        onPress={() => router.push("/login")}
-      >
-        <MaterialCommunityIcons name="logout" size={22} color="#2196F3" style={styles.sidebarIcon} />
-        <Text style={styles.sidebarText}>Logout</Text>
-      </TouchableOpacity>
+        {/* Delete */}
+        <TouchableOpacity
+          onPress={() =>
+            Alert.alert(
+              "Confirm Delete",
+              "Are you sure you want to delete this reminder?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Yes, Delete",
+                  style: "destructive",
+                  onPress: () => handleDelete(item.id),
+                },
+              ]
+            )
+          }
+        >
+          <MaterialCommunityIcons
+            name="delete-outline"
+            size={22}
+            color="#F44336"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   return (
-    <DrawerLayoutAndroid
-      ref={(ref) => setDrawer(ref)}
-      drawerWidth={250}
-      drawerPosition="left"
-      renderNavigationView={renderSidebar}
-    >
-      <SafeAreaView style={styles.container}>
-        {/* Enhanced Navbar */}
-        <View style={styles.navbar}>
-          <TouchableOpacity 
-            style={styles.menuButton}
-            onPress={() => drawer?.openDrawer()}
-          >
-            <MaterialCommunityIcons name="menu" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.navTitle}>Dashboard</Text>
-        </View>
+    <SafeAreaView style={styles.container}>
+      {/* Navbar */}
+      <View style={styles.navbar}>
+        <Text style={styles.navTitle}>Dashboard</Text>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome to your Dashboard  {username} 🎉</Text>
-          <Text style={styles.text}>Here is some dummy content...</Text>
-        </View>
-
-        {/* Floating Plus Button at Bottom Center */}
-        <TouchableOpacity style={styles.floatingButton} onPress={() => router.push("/reminders")}>
-          <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() =>
+            Alert.alert("Logout", "Are you sure you want to logout?", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Yes, Logout",
+                style: "destructive",
+                onPress: async () => {
+                  await AsyncStorage.removeItem("token");
+                  await AsyncStorage.removeItem("user");
+                  setToken(null);
+                  setUsername("Guest");
+                  router.replace("/login");
+                },
+              },
+            ])
+          }
+        >
+          <MaterialCommunityIcons name="logout" size={24} color="#fff" />
         </TouchableOpacity>
-      </SafeAreaView>
-    </DrawerLayoutAndroid>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>{getGreeting()},</Text>
+        <Text style={styles.welcomeTextName}>{username} 👋</Text>
+
+        <Text style={styles.reminders}>My Reminders</Text>
+
+        <FlatList
+          data={reminders}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderReminder}
+          ListEmptyComponent={
+            <Text style={styles.text}>No reminders available</Text>
+          }
+        />
+      </View>
+
+      {/* Floating Button */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => router.push("/reminders")}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
 export default DashboardScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9f9f9",
-  },
+  container: { flex: 1, backgroundColor: "#f9f9f9" },
   navbar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#2196F3",
     paddingHorizontal: 25,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  menuButton: {
-   paddingVertical: 25,
-    marginRight: 15,
-    marginTop: 25,
   },
   navTitle: {
     fontSize: 22,
@@ -130,71 +232,50 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
   },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: "#333",
-  },
+  content: { padding: 20 },
+  text: { fontSize: 18, marginBottom: 10, color: "#333", textAlign: "center" },
   floatingButton: {
-    position: "fixed",
-    bottom: 40,
-    right: 40,
-    alignSelf: "flex-end",
+    position: "absolute",
+    bottom: 30,
+    right: 30,
     backgroundColor: "#2196F3",
-    borderRadius: 30,
     width: 60,
     height: 60,
-    alignItems: "center",
+    borderRadius: 30,
     justifyContent: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.30,
-    shadowRadius: 4.65,
+    alignItems: "center",
+    elevation: 5,
   },
-  welcomeText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
-  },
-  sidebar: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  sidebarHeader: {
-    backgroundColor: "#2196F3",
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  sidebarHeaderText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  sidebarLink: {
+  welcomeText: { fontSize: 20, fontWeight: "600" },
+  reminderCard: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+    padding: 15,
+    marginBottom: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
   },
-  sidebarIcon: {
-    marginRight: 15,
-  },
-  sidebarText: {
+  welcomeTextName: { fontSize: 26, fontWeight: "700", marginBottom: 20 },
+  reminderType: {
     fontSize: 18,
-    color: "#333",
-    fontWeight: "500",
+    fontWeight: "bold",
+    color: "#2196F3",
+    marginBottom: 4,
   },
+  reminderPresentation: { fontSize: 14, color: "#8E24AA", marginTop: 4 },
+  reminderDate: { fontSize: 14, color: "#444" },
+  reminderTime: { fontSize: 14, color: "#666" },
+  actions: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reminders: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#2196F3",
+  },
+  logoutButton: { marginLeft: "auto", paddingVertical: 25, marginTop: 25 },
 });

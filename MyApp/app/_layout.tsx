@@ -16,6 +16,7 @@ export default function RootLayout() {
         <Stack.Screen name="register" />
         <Stack.Screen name="dashboard" />
         <Stack.Screen name="reminders" />
+        <Stack.Screen name="edit" />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
       <StatusBar style="auto" />

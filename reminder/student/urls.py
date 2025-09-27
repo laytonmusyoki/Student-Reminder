@@ -13,6 +13,7 @@ urlpatterns = [
     path('signin/', signin, name='signin'),
     path('signout/',signout,name='signout'),
     path('addReminder/', addReminder, name='addReminder'),
+    path('updateReminder/<int:reminder_id>/', updateReminder, name='updateReminder'),
     path('users/', users, name='users'),
     path('getReminders/', getReminders, name='getReminders'),
     path('deleteReminder/<int:reminder_id>/', deleteReminder, name='deleteReminder'),

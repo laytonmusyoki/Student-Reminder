@@ -65,6 +65,21 @@ def addReminder(request):
             serializer.save(user=request.user)
             return Response({"success":"Reminder added successfully"},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def updateReminder(request, reminder_id):
+    try:
+        reminder = Reminder.objects.get(id=reminder_id, user=request.user)
+    except Reminder.DoesNotExist:
+        return Response({"error": "Reminder not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = ReminderSerializer(reminder, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"success": "Reminder updated successfully"}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
