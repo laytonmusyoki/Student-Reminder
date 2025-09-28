@@ -33,7 +33,7 @@ const EditReminderForm = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const baseUrl = "http://192.168.0.108:8000"; // ✅ use same as Add
+  const baseUrl = "http://192.168.0.125:8000"; // ✅ use same as Add
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({

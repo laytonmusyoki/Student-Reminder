@@ -29,7 +29,7 @@ const AddReminderForm = ({ navigation }: any) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const baseUrl = "http://192.168.0.108:8000";
+  const baseUrl = "http://192.168.0.125:8000";
 
   // Initialize notifications when component mounts
   useEffect(() => {
