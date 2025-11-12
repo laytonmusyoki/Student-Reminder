@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -33,7 +34,7 @@ const EditReminderForm = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const baseUrl = "http://192.168.0.125:8000"; // ✅ use same as Add
+  const baseUrl = "http://192.168.0.109:8000"; // ✅ use same as Add
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({

@@ -29,7 +29,7 @@ const AddReminderForm = ({ navigation }: any) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const baseUrl = "http://192.168.0.125:8000";
+  const baseUrl = "http://192.168.0.109:8000";
 
   // Initialize notifications when component mounts
   useEffect(() => {
@@ -49,41 +49,52 @@ const AddReminderForm = ({ navigation }: any) => {
     }));
   };
 
-  // Validate if the selected date and time is in the future
-  const isValidFutureDateTime = (date: string, time: string) => {
-    if (!date || !time) return false;
+  // Validate if the selected date is today or future, and time is in the future
+  // const isValidFutureDateTime = (date: string, time: string) => {
+  //   if (!date || !time) return false;
 
-    const [year, month, day] = date.split('-');
-    const timeStr = time;
+  //   const [year, month, day] = date.split('-');
+  //   const timeStr = time;
     
-    let hours, minutes;
-    if (timeStr.includes('AM') || timeStr.includes('PM')) {
-      const [timeOnly, period] = timeStr.split(' ');
-      const [h, m] = timeOnly.split(':');
-      hours = parseInt(h);
-      minutes = parseInt(m);
+  //   let hours, minutes;
+  //   if (timeStr.includes('AM') || timeStr.includes('PM')) {
+  //     const [timeOnly, period] = timeStr.split(' ');
+  //     const [h, m] = timeOnly.split(':');
+  //     hours = parseInt(h);
+  //     minutes = parseInt(m);
       
-      if (period === 'PM' && hours !== 12) {
-        hours += 12;
-      } else if (period === 'AM' && hours === 12) {
-        hours = 0;
-      }
-    } else {
-      const [h, m] = timeStr.split(':');
-      hours = parseInt(h);
-      minutes = parseInt(m);
-    }
+  //     if (period === 'PM' && hours !== 12) {
+  //       hours += 12;
+  //     } else if (period === 'AM' && hours === 12) {
+  //       hours = 0;
+  //     }
+  //   } else {
+  //     const [h, m] = timeStr.split(':');
+  //     hours = parseInt(h);
+  //     minutes = parseInt(m);
+  //   }
     
-    const selectedDateTime = new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      hours,
-      minutes
-    );
+  //   const selectedDateTime = new Date(
+  //     parseInt(year),
+  //     parseInt(month) - 1,
+  //     parseInt(day),
+  //     hours,
+  //     minutes
+  //   );
 
-    return selectedDateTime > new Date();
-  };
+  //   const now = new Date();
+    
+  //   // Check if selected date is in the past (before today)
+  //   const selectedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  //   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+  //   if (selectedDate < today) {
+  //     return false; // Past date not allowed
+  //   }
+    
+  //   // If it's today or a future date, check if the time is in the future
+  //   return selectedDateTime > now;
+  // };
 
   const handleSubmit = async () => {
     // Validation
@@ -100,13 +111,13 @@ const AddReminderForm = ({ navigation }: any) => {
     }
 
     // Check if date and time is in the future
-    if (!isValidFutureDateTime(formData.date, formData.time)) {
-      Alert.alert(
-        "Invalid Date/Time", 
-        "Please select a future date and time for the reminder"
-      );
-      return;
-    }
+    // if (!isValidFutureDateTime(formData.date, formData.time)) {
+    //   Alert.alert(
+    //     "Invalid Date/Time", 
+    //     "Please select a future time for the reminder. If selecting today's date, choose a time that hasn't passed yet."
+    //   );
+    //   return;
+    // }
 
     setIsSubmitting(true);
 
@@ -139,9 +150,8 @@ const AddReminderForm = ({ navigation }: any) => {
       const responseData = await response.json();
 
       if (response.ok) {
-        // Create reminder object for notification scheduling
         const newReminder = {
-          id: responseData.id || Date.now(), // Use returned ID or fallback
+          id: responseData.id || Date.now(), 
           reminder_type: formData.reminderType.toUpperCase(),
           presentation_type: formData.presentationType,
           due_date: formData.date,
@@ -160,6 +170,39 @@ const AddReminderForm = ({ navigation }: any) => {
             "Reminder added successfully!\n\nYou'll receive a notification at the scheduled time.",
             [{ text: "OK" }]
           );
+          // send_sms_notification(newReminder) 
+          try{
+            const userString = await AsyncStorage.getItem("user");
+            const user = userString ? JSON.parse(userString) : {};
+
+            console.log("Saved token:", token);
+            console.log("Saved user:", user);
+
+            const phoneNumber = user?.phone_number || user?.user?.phone_number || "No phone number found";
+            // format number to start with +254
+            let formattedNumber = phoneNumber;
+            if (phoneNumber.startsWith("0")) {
+              formattedNumber = "+254" + phoneNumber.slice(1);
+            } else if (!phoneNumber.startsWith("+")) {
+              formattedNumber = "+254" + phoneNumber;
+            }
+
+            const response = await fetch(`${baseUrl}/api/send_sms/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ message: `Reminder set for ${newReminder.reminder_type} on ${newReminder.due_date} at ${newReminder.due_time}` , phone_number: formattedNumber }),
+            });
+            if (response.ok) {
+              console.log("SMS notification request sent successfully.");
+            } else {
+              console.warn("Failed to send SMS notification request.");
+            }
+          } catch (error) {
+            console.warn("Error sending SMS notification request:", error);
+          }
         } else {
           Alert.alert(
             "Reminder Added", 

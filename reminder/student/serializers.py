@@ -6,13 +6,15 @@ class Register(serializers.Serializer):
     username = serializers.CharField()
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    university = serializers.CharField()  # ✅ Add this field
+    phone_number = serializers.CharField()  
+    university = serializers.CharField() 
 
     def validate(self, data):
         return data
 
     def create(self, validated_data):
-        university = validated_data.pop("university")  # ✅ Take it out before creating User
+        university = validated_data.pop("university")  #
+        phone_number = validated_data.pop("phone_number")  
         user = User.objects.create(
             username=validated_data["username"],
             email=validated_data["email"]
@@ -20,19 +22,19 @@ class Register(serializers.Serializer):
         user.set_password(validated_data["password"])
         user.save()
 
-        # ✅ Create profile with university
-        Profile.objects.create(user=user, university=university)
+        # ✅ Create profile with university and phone number
+        Profile.objects.create(user=user, university=university, phone_number=phone_number)
 
         return user  # better to return the User instance
 
 
 class LoginResponseSerializer(serializers.ModelSerializer):
     university = serializers.CharField(source="profile.university")  # ✅ link to Profile
+    phone_number = serializers.CharField(source="profile.phone_number")  # ✅ link to Profile
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "university"]
-
+        fields = ["id", "username", "email", "university", "phone_number"]
 
 
 class ReminderSerializer(serializers.ModelSerializer):

@@ -16,6 +16,9 @@ const DashboardScreen = () => {
   const [username, setUsername] = useState("Guest");
   const [reminders, setReminders] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+
+  const baseUrl = "http://192.168.0.109:8000"; 
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -24,9 +27,7 @@ const DashboardScreen = () => {
     return "Good evening";
   };
 
-  const baseUrl = "http://192.168.0.125:8000";
-
-  // Load user
+  // Load user info
   useEffect(() => {
     (async () => {
       try {
@@ -52,6 +53,33 @@ const DashboardScreen = () => {
     })();
   }, []);
 
+  // load phone number
+  useEffect(() => {
+    (async () => {
+      try {
+        const userString = await AsyncStorage.getItem("user");
+            const user = userString ? JSON.parse(userString) : {};
+
+            console.log("Saved token:", token);
+            console.log("Saved user:", user);
+
+            const phoneNumber = user?.phone_number || user?.user?.phone_number || "No phone number found";
+            // format number to start with +254
+            let formattedNumber = phoneNumber;
+            if (phoneNumber.startsWith("0")) {
+              formattedNumber = "+254" + phoneNumber.slice(1);
+            } else if (!phoneNumber.startsWith("+")) {
+              formattedNumber = "+254" + phoneNumber;
+            }
+            setPhoneNumber(formattedNumber);
+      } catch (e) {
+        console.warn("Failed to load phone number", e);
+      }
+    })();
+  }, []);
+
+
+
   // Fetch reminders
   useEffect(() => {
     (async () => {
@@ -73,6 +101,7 @@ const DashboardScreen = () => {
   // Delete reminder
   const handleDelete = async (id: number) => {
     if (!token) return;
+    Alert.alert("Phone Number", phoneNumber || "No phone number found");
 
     try {
       const response = await fetch(`${baseUrl}/api/deleteReminder/${id}/`, {
@@ -93,6 +122,53 @@ const DashboardScreen = () => {
       console.warn("Delete request failed", e);
     }
   };
+
+
+  useEffect(() => {
+    if (reminders.length === 0 || !token) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+
+      reminders.forEach(async (reminder) => {
+        const reminderDateTime = new Date(`${reminder.due_date}T${reminder.due_time}`);
+        const diffMinutes = (reminderDateTime.getTime() - now.getTime()) / 60000;
+
+        // Send SMS if within 30 minutes
+        if (diffMinutes > 0 && diffMinutes <= 30) {
+          const notifiedKey = `notified_${reminder.id}`;
+          const alreadyNotified = await AsyncStorage.getItem(notifiedKey);
+
+          if (!alreadyNotified) {
+            try {
+              const response = await fetch(`${baseUrl}/send_sms/`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  phone: phoneNumber || "No phone number found",
+                  message: `Reminder: Your ${reminder.reminder_type} is due at ${reminder.due_time} on ${reminder.due_date}`,
+                }),
+              });
+
+              if (response.ok) {
+                console.log("SMS sent for reminder:", reminder.id);
+                await AsyncStorage.setItem(notifiedKey, "true");
+              } else {
+                console.warn("Failed to send SMS:", await response.text());
+              }
+            } catch (error) {
+              console.warn("Error sending SMS:", error);
+            }
+          }
+        }
+      });
+    }, 1000); 
+
+    return () => clearInterval(interval);
+  }, [reminders, token]);
 
   // Reminder card
   const renderReminder = ({ item }: any) => (
@@ -155,7 +231,9 @@ const DashboardScreen = () => {
           />
         </TouchableOpacity>
       </View>
+      
     </View>
+    
   );
 
   return (
@@ -211,7 +289,32 @@ const DashboardScreen = () => {
       >
         <MaterialCommunityIcons name="plus" size={28} color="#fff" />
       </TouchableOpacity>
+      <TouchableOpacity
+  onPress={async () => {
+    try {
+      const res = await fetch(`${baseUrl}/api/send_sms/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone_number: "+254755965011",
+          message: "Manual test message",
+        }),
+      });
+      console.log("Response:", await res.text());
+    } catch (e) {
+      console.error("Error:", e);
+    }
+  }}
+  style={{ backgroundColor: "orange", padding: 10, marginTop: 20 }}
+>
+  <Text style={{ color: "white" }}>Test SMS API</Text>
+</TouchableOpacity>
+
     </SafeAreaView>
+    
   );
 };
 

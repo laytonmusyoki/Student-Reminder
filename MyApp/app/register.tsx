@@ -19,7 +19,8 @@ const RegisterScreen = () => {
     email: "",
     password: "",
     confirm: "",
-    university: "", // ✅ added
+    university: "", 
+    phone_number: "", 
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -29,7 +30,7 @@ const RegisterScreen = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
 
   const handleSubmit = async () => {
-    if (!form.username || !form.email || !form.password || !form.confirm || !form.university) {
+    if (!form.username || !form.email || !form.password || !form.confirm || !form.university || !form.phone_number) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
@@ -44,7 +45,7 @@ const RegisterScreen = () => {
 
     setLoading(true);
 
-    const baseUrl = "http://192.168.0.125:8000";
+    const baseUrl = "http://192.168.0.109:8000";
 
     try {
       const response = await fetch(`${baseUrl}/api/register/`, {
@@ -56,7 +57,8 @@ const RegisterScreen = () => {
           username: form.username,
           email: form.email,
           password: form.password,
-          university: form.university, // ✅ send to backend
+          university: form.university, 
+          phone_number: form.phone_number, 
         }),
       });
 
@@ -97,6 +99,16 @@ const RegisterScreen = () => {
         onChangeText={(text) => handleChange("email", text)}
         keyboardType="email-address"
         autoCapitalize="none"
+      />
+
+      {/* phone number */}
+      <TextInput
+        style={styles.input}
+        placeholder="Phone Number"
+        placeholderTextColor="#888"
+        value={form.phone_number}
+        onChangeText={(text) => handleChange("phone_number", text)}
+        keyboardType="phone-pad"
       />
 
       {/* ✅ New University Input */}

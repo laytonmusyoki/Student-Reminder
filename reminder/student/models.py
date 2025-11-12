@@ -8,6 +8,7 @@ from django.contrib.auth.models import AbstractUser
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
     university = models.CharField(max_length=255, blank=True)
 
     def __str__(self):

@@ -17,4 +17,5 @@ urlpatterns = [
     path('users/', users, name='users'),
     path('getReminders/', getReminders, name='getReminders'),
     path('deleteReminder/<int:reminder_id>/', deleteReminder, name='deleteReminder'),
+    path('send_sms/', send_sms, name='send_sms'),
 ]

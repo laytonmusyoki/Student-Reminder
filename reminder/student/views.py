@@ -7,6 +7,15 @@ from .serializers import *
 from django.db import IntegrityError
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import login,logout
+import africastalking
+import os
+
+AFRICASTALKING_USERNAME = "layton"
+AFRICASTALKING_API_KEY = "atsk_fb8a8fc640474c10c7fbf9042e8ba7f4bf9cb20ebc47377d384f4177310536484ab6627b"
+
+africastalking.initialize(AFRICASTALKING_USERNAME, AFRICASTALKING_API_KEY)
+sms = africastalking.SMS
+
 
 # Create your views here.
 
@@ -44,6 +53,7 @@ def signin(request):
 
         # ✅ Use serializer that includes profile.university
         serializer = LoginResponseSerializer(user)
+        print("Serialized user data:", serializer.data)
 
         return Response({
             "refresh": str(refresh),
@@ -109,9 +119,40 @@ def users(request):
 
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def signout(request):
     # logout(request)
     return Response({"success":"You have logged out successfully"})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_sms(request):
+    phone_number = request.data.get('phone_number')
+    message = request.data.get('message')
+
+    if not phone_number or not message:
+        return Response(
+            {"error": "Phone number and message are required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    print(f"Sending SMS using username: to {phone_number}")
+
+    try:
+        response = sms.send(message=message, recipients=[phone_number])
+        print("Africastalking response:", response)
+
+        return Response(
+            {"success": "SMS sent successfully", "response": response},
+            status=status.HTTP_200_OK
+        )
+
+    except Exception as e:
+        print("Africastalking error:", str(e))
+        return Response(
+            {"error": f"Africastalking error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+

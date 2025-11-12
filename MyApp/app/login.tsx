@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = () => {
   const router = useRouter();
-  const [username, setUsername] = useState(""); // ✅ Django expects username, not email
+  const [username, setUsername] = useState(""); 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ const handleLogin = async () => {
   }
 
   setLoading(true);
-  const baseUrl = "http://192.168.0.125:8000";
+  const baseUrl = "http://192.168.0.109:8000";
 
   try {
     const response = await fetch(`${baseUrl}/api/signin/`, {
@@ -41,21 +41,29 @@ const handleLogin = async () => {
 
     const data = await response.json();
     console.log("Login response:", data);
-
-    if (response.ok) {
-      if (data.access) {
-        await AsyncStorage.setItem("token", data.access);
-      }
-      await AsyncStorage.setItem("user", JSON.stringify(data));
-
-      const token = await AsyncStorage.getItem("token");
-      console.log("Saved token:", token);
-
-      Alert.alert("Success", "Login successful!");
-      router.push("/dashboard");
-    } else {
-      Alert.alert("Error", data.error || "Invalid credentials");
+  if (response.ok) {
+    if (data.access) {
+      await AsyncStorage.setItem("token", data.access);
     }
+
+    await AsyncStorage.setItem("user", JSON.stringify(data));
+
+    const token = await AsyncStorage.getItem("token");
+    const userString = await AsyncStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : {};
+
+    console.log("Saved token:", token);
+    console.log("Saved user:", user);
+
+    const phoneNumber = user?.phone_number || user?.user?.phone_number || "No phone number found";
+
+
+    Alert.alert("Success", "Login successful!");
+    router.push("/dashboard");
+  } else {
+    Alert.alert("Error", data.error || "Invalid credentials");
+  }
+
   } catch (error: any) {
     Alert.alert("Error", "Cannot connect to server. Check if your backend is running.");
   } finally {
